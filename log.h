@@ -7,20 +7,25 @@
 
 #ifndef LOG_H
 #define LOG_H
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #define _AUTH "lilin"
+#define _HUB "https://github.com/lilin5819/log_h"
+
+#ifndef DEBUG
+#define DEBUG
+#endif
 
 #ifndef DEBUG
 
-#define LOG_INIT(...)
+#define LOG_DEF(...)
 #define log_tag(...)
 #define log_base(...)
-#define log(...)
+#define logs(...)
 #define log_(...)
 #define log_err(...)
 #define log_e(...)
@@ -35,7 +40,9 @@
 #define log_malloc(...)
 #define log_free(...)
 
-#define init_log(...)
+#define set_log_name(...)
+#define set_log_file(...)
+#define set_log_mode(...)
 #define ok(...) __VA_ARGS__
 
 #else /* no DEBUG */
@@ -49,132 +56,132 @@
 #define _BLANK_ERR "blank"
 #define _NULL_ERR "NULL"
 #define _ASSERT_ERR "assert failed !"
-#define PR_RED_START() fprintf(stdout, _RED_STR)
-#define PR_FLASH_START() fprintf(stdout, _FLASH_STR)
-#define PR_COLOR_END() fprintf(stdout, _COLOR_END)
 
 #define _COLOR_MASK 0x03
 #define _FLASH_MASK 0x04
 
-typedef enum _COLOR_T
-{
-    _GRE,
-    _RED,
-    _YEL,
-    _END,
-    _FLASH
-} COLOR_T;
-static char _COLOR[5][16] = {_GRE_STR, _RED_STR, _YEL_STR, _COLOR_END, _FLASH_STR};
-static char *_log_tag = NULL;
-
-char *get_log_name(void);
+typedef enum _COLOR_T { _GRE, _RED, _YEL, _END, _FLASH } COLOR_T;
+static char _COLOR[5][16] = {_GRE_STR, _RED_STR, _YEL_STR, _COLOR_END,
+                             _FLASH_STR};
+extern char *_log_app_name;
+extern int _log_verbose_mode;
+extern FILE *_log_fp;
 void set_log_name(char *appname);
-    void set_log_file(char * file);
-// void set_log_devnull(void);
+void set_log_file(char *file);
+void set_log_mode(int is_verbose);
 
-#define LOG_DEF()                              \
-    char *_log_app = "";                          \
-    char *get_log_name(void)                       \
-    {                                              \
-        return _log_app;                           \
-    }                                              \
-    void init_log(char *appname)                   \
-    {                                              \
-        _log_app = appname;                        \
-    }                                              \
-    void set_log_file(char * file)                 \
-    {                                              \
-        stdout = freopen(file, "w+",stdout);       \
-        stderr = freopen(file, "w+",stderr);       \
-    }
+#define LOG_DEF()                                                       \
+  char *_log_app_name = "";                                             \
+  int _log_verbose_mode = 1;                                            \
+  FILE *_log_fp = NULL;                                                 \
+  void set_log_name(char *appname) {                                    \
+    if (!appname) return;                                               \
+    _log_app_name = appname;                                            \
+    logs(_HUB);                                                         \
+    logs("start log app <%s>", appname);                                \
+  }                                                                     \
+  void set_log_mode(int is_verbose) { _log_verbose_mode = is_verbose; } \
+  void set_log_file(char *file) {                                       \
+    if (_log_fp) {                                                      \
+      fclose(_log_fp);                                                  \
+      _log_fp = NULL;                                                   \
+    }                                                                   \
+    _log_fp = fopen(file, "w+");                                        \
+  }
 
-static inline void log_base(FILE *fp, const char flag, const char *tag, const char *file, const char *fun, const int line, const char *fmt, ...)
-{
-    if(!fp) return;
-    static char fmtbuf[1024];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(fmtbuf, sizeof(fmtbuf), fmt, ap);
-    va_end(ap);
-    fprintf(fp, "[%s%s%s]", _COLOR[_YEL], get_log_name(), _COLOR[_END]);
-    fprintf(fp, "[%-10s > %-15s > %3d]", file, fun, line);
-    if (tag)
-        fprintf(fp, "[%s%s%s%s]", _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], tag, _COLOR[_END]);
-    fprintf(fp, "[%s%s%s%s]\n", _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], fmtbuf, _COLOR[_END]);
-    fflush(fp);
+static inline void log_base(const char flag, const char *tag, const char *file,
+                            const char *fun, const int line, const char *fmt,
+                            ...) {
+  static char fmtbuf[1024];
+  static char buf[2048];
+  if (!_log_verbose_mode && !_log_fp) return;
+  va_list ap;
+  va_start(ap, fmt);
+  vsnprintf(fmtbuf, sizeof(fmtbuf), fmt, ap);
+  va_end(ap);
+  snprintf(buf, 2048, "[%s%s%s]", _COLOR[_YEL], _log_app_name, _COLOR[_END]);
+  snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%-10s > %-15s > %3d]", file,
+           fun, line);
+  if (tag)
+    snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%s%s%s%s]",
+             _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], tag,
+             _COLOR[_END]);
+  snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%s%s%s%s]\n",
+           _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], fmtbuf,
+           _COLOR[_END]);
+
+  if (_log_verbose_mode) {
+    fputs(buf, stdout);
+    fflush(stdout);
+  }
+  if (_log_fp) {
+    fputs(buf, _log_fp);
+    fflush(_log_fp);
+  }
 }
 
-#define log_line(fp, flag, tag, ...)                                            \
-    do                                                                          \
-    {                                                                           \
-        log_base(fp, flag, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); \
-    } while (0)
+#define log_line(flag, tag, ...)                                        \
+  do {                                                                  \
+    log_base(flag, tag, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__); \
+  } while (0)
 
-#define log(...) log_line(stdout, _GRE, NULL, __VA_ARGS__)
-#define log_() log_line(stdout, _GRE, NULL, "line")
-#define log_tag(tag, ...) log_line(stdout, _GRE, tag, __VA_ARGS__)
-#define log_err(MSG, ...) log_line(stderr, _RED | _FLASH, MSG, __VA_ARGS__)
+#define logs(...) log_line(_GRE, NULL, __VA_ARGS__)
+#define log_() log_line(_GRE, NULL, "line")
+#define log_tag(tag, ...) log_line(_GRE, tag, __VA_ARGS__)
+#define log_err(MSG, ...) log_line(_RED | _FLASH, MSG, __VA_ARGS__)
 #define log_e(...) log_err("ERROR", __VA_ARGS__)
-#define log_d(N) log("%s=%d", #N, N)
-#define log_u(N) log("%s=%u", #N, N)
-#define log_ld(N) log("%s=%ld", #N, N)
-#define log_lu(N) log("%s=%lu", #N, N)
-#define log_f(N) log("%s=%f", #N, N)
+#define log_d(N) logs("%s=%d", #N, N)
+#define log_u(N) logs("%s=%u", #N, N)
+#define log_ld(N) logs("%s=%ld", #N, N)
+#define log_lu(N) logs("%s=%lu", #N, N)
+#define log_f(N) logs("%s=%f", #N, N)
 
-#define log_p(N)                                \
-    do                                          \
-    {                                           \
-        if (!N)                                 \
-            log_err(_NULL_ERR, "%s", #N);       \
-        else                                    \
-            log_tag("pointer", "%s=%p", #N, N); \
-    } while (0)
+#define log_p(N)                          \
+  do {                                    \
+    if (!N)                               \
+      log_err(_NULL_ERR, "%s", #N);       \
+    else                                  \
+      log_tag("pointer", "%s=%p", #N, N); \
+  } while (0)
 //     string
-#define log_s(STR)                                     \
-    do                                                 \
-    {                                                  \
-        if (!(char *)(STR))                            \
-            log_err(_NULL_ERR, "%s", #STR);            \
-        else if (!((char *)(STR))[0])                  \
-            log_err(_BLANK_ERR, "%s=\"\"", #STR);      \
-        else                                           \
-            log_tag("string", "%s=\"%s\"", #STR, STR); \
-    } while (0)
+#define log_s(STR)                               \
+  do {                                           \
+    if (!STR)                                    \
+      log_err(_NULL_ERR, "%s", #STR);            \
+    else if (!((char *)(STR))[0])                \
+      log_err(_BLANK_ERR, "%s=\"\"", #STR);      \
+    else                                         \
+      log_tag("string", "%s=\"%s\"", #STR, STR); \
+  } while (0)
 
-#define log_mem(P, LEN)                                           \
-    do                                                            \
-    {                                                             \
-        if (!P)                                                   \
-            log_err(_NULL_ERR, "%s", #P);                         \
-        else                                                      \
-            log_tag("MEMORY", "p:%s addr:%p len:%d", #P, P, LEN); \
-        fprintf(stdout, "[ ");                                    \
-        for (int i = 0; i < LEN; i++)                             \
-        {                                                         \
-            fprintf(stdout, "%02X", ((char *)P)[i] & 0xFF);       \
-        }                                                         \
-        fprintf(stdout, " ]\n");                                  \
-    } while (0)
+#define log_mem(P, LEN)                                     \
+  do {                                                      \
+    if (!P)                                                 \
+      log_err(_NULL_ERR, "%s", #P);                         \
+    else                                                    \
+      log_tag("MEMORY", "p:%s addr:%p len:%d", #P, P, LEN); \
+    fprintf(_log_fp, "[ ");                                 \
+    for (int i = 0; i < LEN; i++) {                         \
+      fprintf(_log_fp, "%02X", ((char *)P)[i] & 0xFF);      \
+    }                                                       \
+    fprintf(_log_fp, " ]\n");                               \
+  } while (0)
 
 //     assert
-#define ok(expr)                               \
-    do                                         \
-    {                                          \
-        if (!(expr))                           \
-            log_err(_ASSERT_ERR, "%s", #expr); \
-    } while (0)
+#define ok(expr)                                    \
+  do {                                              \
+    if (!(expr)) log_err(_ASSERT_ERR, "%s", #expr); \
+  } while (0)
 
-#define log_malloc(_VAR, _SIZE)                             \
-    do                                                      \
-    {                                                       \
-        log_tag("malloc", "%s %p %lu", #_VAR, _VAR, _SIZE); \
-    } while (0)
+#define log_malloc(_VAR, _SIZE)                         \
+  do {                                                  \
+    log_tag("malloc", "%s %p %lu", #_VAR, _VAR, _SIZE); \
+  } while (0)
 
-#define log_free(_VAR, _SIZE)                             \
-    do                                                    \
-    {                                                     \
-        log_tag("free", "%s %p %lu", #_VAR, _VAR, _SIZE); \
-    } while (0)
+#define log_free(_VAR, _SIZE)                         \
+  do {                                                \
+    log_tag("free", "%s %p %lu", #_VAR, _VAR, _SIZE); \
+  } while (0)
 #endif /* DEBUG */
 
 #define log_size log_lu
