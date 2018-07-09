@@ -45,7 +45,7 @@
 #define set_log_mode(...)
 #define ok(...) __VA_ARGS__
 
-#else /* no DEBUG */
+#else /* DEBUG */
 
 #define _RED_STR "\033[1;31m"
 #define _GRE_STR "\033[1;32m"
@@ -66,9 +66,9 @@ static char _COLOR[5][16] = {_GRE_STR, _RED_STR, _YEL_STR, _COLOR_END,
 extern char *_log_app_name;
 extern int _log_verbose_mode;
 extern FILE *_log_fp;
-void set_log_name(char *appname);
-void set_log_file(char *file);
-void set_log_mode(int is_verbose);
+extern void set_log_name(char *appname);
+extern void set_log_file(char *file);
+extern void set_log_mode(int is_verbose);
 
 #define LOG_DEF()                                                       \
   char *_log_app_name = "";                                             \
@@ -160,6 +160,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
       log_err(_NULL_ERR, "%s", #P);                         \
     else                                                    \
       log_tag("MEMORY", "p:%s addr:%p len:%d", #P, P, LEN); \
+    if(!_log_verbose_mode) return;                          \
     fprintf(_log_fp, "[ ");                                 \
     for (int i = 0; i < LEN; i++) {                         \
       fprintf(_log_fp, "%02X", ((char *)P)[i] & 0xFF);      \
