@@ -29,6 +29,7 @@ int main(int argc, char const *argv[])
     logs("%s can't catch this msg in %s , but in log file %s!!!","You","terminal","/tmp/test.log");
     set_log_mode(1);
 
+    log_mem(myname,strlen(myname)+1);
 
     logs("Thank %s","you");
     return 0;

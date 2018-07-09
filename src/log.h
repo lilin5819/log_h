@@ -126,11 +126,11 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_tag(tag, ...) log_line(_GRE, tag, __VA_ARGS__)
 #define log_err(MSG, ...) log_line(_RED | _FLASH, MSG, __VA_ARGS__)
 #define log_e(...) log_err("ERROR", __VA_ARGS__)
-#define log_d(N) logs("%s=%d", #N, N)
-#define log_u(N) logs("%s=%u", #N, N)
-#define log_ld(N) logs("%s=%ld", #N, N)
-#define log_lu(N) logs("%s=%lu", #N, N)
-#define log_f(N) logs("%s=%f", #N, N)
+#define log_d(N) log_tag("int","%s=%d", #N, N)
+#define log_u(N) log_tag("uint","%s=%u", #N, N)
+#define log_ld(N) log_tag("long","%s=%ld", #N, N)
+#define log_lu(N) log_tag("ulong","%s=%lu", #N, N)
+#define log_f(N) log_tag("float","%s=%f", #N, N)
 
 #define log_p(N)                          \
   do {                                    \
@@ -152,22 +152,20 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 
 #define log_mem(P, LEN)                                     \
   do {                                                      \
+    char hexbuf[512]; \
+    for (int i = 0; i < LEN; i++) {                         \
+      snprintf(hexbuf+strlen(hexbuf),512-strlen(hexbuf), "%02X", ((char *)P)[i] & 0xFF);      \
+    }                                                       \
     if (!P)                                                 \
       log_err(_NULL_ERR, "%s", #P);                         \
     else                                                    \
-      log_tag("MEMORY", "p:%s addr:%p len:%d", #P, P, LEN); \
-    if(!_log_verbose_mode) return;                          \
-    fprintf(_log_fp, "[ ");                                 \
-    for (int i = 0; i < LEN; i++) {                         \
-      fprintf(_log_fp, "%02X", ((char *)P)[i] & 0xFF);      \
-    }                                                       \
-    fprintf(_log_fp, " ]\n");                               \
+      log_tag("MEMORY", "p:%s addr:%p len:%d HEX:%s", #P, P, LEN,hexbuf); \
   } while (0)
 
 //     assert
 #define ok(expr)                                    \
   do {                                              \
-    if (!(expr)) log_err(_ASSERT_ERR,"assert msg: \" " "%s" "\"", #expr); \
+    if (!(expr)) log_err(_ASSERT_ERR,"assert msg: \"" "%s" "\"", #expr); \
   } while (0)
 
 #define log_malloc(_VAR, _SIZE)                         \
