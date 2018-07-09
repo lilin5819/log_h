@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #define _AUTH "lilin"
-#define _HUB "https://github.com/lilin5819/log_h"
+#define _GITHUB "https://github.com/lilin5819/log_h"
 
 #ifndef DEBUG
 #define DEBUG
@@ -77,7 +77,7 @@ extern void set_log_mode(int is_verbose);
   void set_log_name(char *appname) {                                    \
     if (!appname) return;                                               \
     _log_app_name = appname;                                            \
-    logs(_HUB);                                                         \
+    logs(_GITHUB);                                                         \
     logs("start log app <%s>", appname);                                \
   }                                                                     \
   void set_log_mode(int is_verbose) { _log_verbose_mode = is_verbose; } \
@@ -171,7 +171,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 //     assert
 #define ok(expr)                                    \
   do {                                              \
-    if (!(expr)) log_err(_ASSERT_ERR, "%s", #expr); \
+    if (!(expr)) log_err(_ASSERT_ERR,"assert msg: \" " "%s" "\"", #expr); \
   } while (0)
 
 #define log_malloc(_VAR, _SIZE)                         \
