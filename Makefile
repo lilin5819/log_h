@@ -1,5 +1,5 @@
 CC = cc 
-CFLAGS = -Isrc
+CFLAGS = -Isrc -DDEBUG
 
 APP = test.elf
 

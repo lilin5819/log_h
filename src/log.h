@@ -17,10 +17,6 @@
 #define _GITHUB "https://github.com/lilin5819/log_h"
 
 #ifndef DEBUG
-#define DEBUG
-#endif
-
-#ifndef DEBUG
 
 #define LOG_DEF(...)
 #define log_tag(...)
