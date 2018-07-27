@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
 
 #define _AUTH "lilin"
 #define _GITHUB "https://github.com/lilin5819/log_h"
@@ -64,27 +65,36 @@ static char _COLOR[5][16] = {_GRE_STR, _RED_STR, _YEL_STR, _COLOR_END,
 extern char *_log_app_name;
 extern int _log_verbose_mode;
 extern FILE *_log_fp;
+extern int _log_fd;
+extern size_t _log_line_sum;
+extern size_t _log_max_line;
 extern void set_log_name(char *appname);
 extern void set_log_file(char *file);
+extern void set_log_max_line(size_t max_line);
 extern void set_log_mode(int is_verbose);
 
 #define LOG_DEF()                                                       \
   char *_log_app_name = "";                                             \
   int _log_verbose_mode = 1;                                            \
   FILE *_log_fp = NULL;                                                 \
+  int _log_fd = 0;                                                      \
+  size_t _log_line_sum = 0;                                             \
+  size_t _log_max_line = 10000;                                         \
   void set_log_name(char *appname) {                                    \
     if (!appname) return;                                               \
     _log_app_name = appname;                                            \
-    logs(_GITHUB);                                                         \
+    logs(_GITHUB);                                                      \
     logs("start log app <%s>", appname);                                \
   }                                                                     \
   void set_log_mode(int is_verbose) { _log_verbose_mode = is_verbose; } \
+  void set_log_max_line(size_t max_line) { _log_max_line = max_line; }  \
   void set_log_file(char *file) {                                       \
     if (_log_fp) {                                                      \
       fclose(_log_fp);                                                  \
       _log_fp = NULL;                                                   \
     }                                                                   \
     _log_fp = fopen(file, "w+");                                        \
+    _log_fd = fileno(_log_fp);                                          \
   }
 
 static inline void log_base(const char flag, const char *tag, const char *file,
@@ -113,6 +123,12 @@ static inline void log_base(const char flag, const char *tag, const char *file,
     fflush(stdout);
   }
   if (_log_fp) {
+    if(_log_line_sum == _log_max_line){
+      _log_line_sum = 0;
+      ftruncate(_log_fd,0);
+      lseek(_log_fd,0,SEEK_SET);
+    } else
+      _log_line_sum ++;
     fputs(buf, _log_fp);
     fflush(_log_fp);
   }
