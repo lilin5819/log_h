@@ -39,7 +39,7 @@
 #define log_p(...)
 #define log_mem(...)
 
-#define set_log_name(...)
+#define set_log_app(...)
 #define set_log_file(...)
 #define set_log_mode(...)
 #define ok(...) __VA_ARGS__
@@ -58,7 +58,7 @@
 
 #define _COLOR_MASK 0x03
 #define _FLASH_MASK 0x04
-
+#define _NEW_LINE 0x80
 typedef enum _COLOR_T { _GRE, _RED, _YEL, _END, _FLASH } COLOR_T;
 static char _COLOR[5][16] = {_GRE_STR, _RED_STR, _YEL_STR, _COLOR_END,
                              _FLASH_STR};
@@ -68,7 +68,7 @@ extern FILE *_log_fp;
 extern int _log_fd;
 extern size_t _log_line_sum;
 extern size_t _log_max_line;
-extern void set_log_name(char *appname);
+extern void set_log_app(char *appname);
 extern void set_log_file(char *file);
 extern void set_log_max_line(size_t max_line);
 extern void set_log_mode(int is_verbose);
@@ -80,11 +80,11 @@ extern void set_log_mode(int is_verbose);
   int _log_fd = 0;                                                      \
   size_t _log_line_sum = 0;                                             \
   size_t _log_max_line = 10000;                                         \
-  void set_log_name(char *appname) {                                    \
+  void set_log_app(char *appname) {                                    \
     if (!appname) return;                                               \
     _log_app_name = appname;                                            \
-    logs(_GITHUB);                                                      \
-    logs("start log app <%s>", appname);                                \
+    logs(_GITHUB "\n");                                                      \
+    logs("start log app <%s>\n", appname);                                \
   }                                                                     \
   void set_log_mode(int is_verbose) { _log_verbose_mode = is_verbose; } \
   void set_log_max_line(size_t max_line) { _log_max_line = max_line; }  \
@@ -114,9 +114,11 @@ static inline void log_base(const char flag, const char *tag, const char *file,
     snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%s%s%s%s]",
              _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], tag,
              _COLOR[_END]);
-  snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%s%s%s%s]\n",
+  snprintf(buf + strlen(buf), 2048 - strlen(buf), "%s%s%s%s",
            _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], fmtbuf,
            _COLOR[_END]);
+  if(flag&_NEW_LINE)
+    snprintf(buf + strlen(buf), 2048 - strlen(buf), "\n");
 
   if (_log_verbose_mode) {
     fputs(buf, stdout);
@@ -140,8 +142,8 @@ static inline void log_base(const char flag, const char *tag, const char *file,
   } while (0)
 
 #define logs(...) log_line(_GRE, NULL, __VA_ARGS__)
-#define log_() log_line(_GRE, NULL, "line")
-#define log_tag_base(tag, ...) log_line(_GRE, tag, __VA_ARGS__)
+#define log_() log_line(_GRE|_NEW_LINE, NULL, "line")
+#define log_tag_base(tag, ...) log_line(_GRE|_NEW_LINE, tag, __VA_ARGS__)
 #define log_err_base(MSG, ...) log_line(_RED | _FLASH, MSG, __VA_ARGS__)
 #define log_e(...) log_err_base("ERROR", __VA_ARGS__)
 #define log_d(N) log_tag_base("int","%s=%d", #N, N)
@@ -153,7 +155,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_p(N)                          \
   do {                                    \
     if (!N)                               \
-      log_err_base(_NULL_ERR, "%s", #N);       \
+      log_err_base(_NULL_ERR, "%s\n", #N);       \
     else                                  \
       log_tag_base("pointer", "%s=%p", #N, N); \
   } while (0)
@@ -161,9 +163,9 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_s(STR)                               \
   do {                                           \
     if (!STR)                                    \
-      log_err_base(_NULL_ERR, "%s", #STR);            \
+      log_err_base(_NULL_ERR, "%s\n", #STR);            \
     else if (!((char *)(STR))[0])                \
-      log_err_base(_BLANK_ERR, "%s=\"\"", #STR);      \
+      log_err_base(_BLANK_ERR, "%s=\"\"\n", #STR);      \
     else                                         \
       log_tag_base("string", "%s=\"%s\"", #STR, STR); \
   } while (0)
@@ -175,7 +177,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
       sprintf(hexbuf+2*i, "%02X", ((char *)P)[i] & 0xFF);   \
     }                                                       \
     if (!P)                                                 \
-      log_err_base(_NULL_ERR, "%s", #P);                         \
+      log_err_base(_NULL_ERR, "%s\n", #P);                         \
     else                                                    \
       log_tag_base("MEMORY", "p:%s addr:%p len:%d HEX:%s", #P, P, LEN,hexbuf); \
   } while (0)
@@ -183,7 +185,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 //     assert
 #define ok(expr)                                    \
   do {                                              \
-    if (!(expr)) log_err_base(_ASSERT_ERR,"assert msg: \"" "%s" "\"", #expr); \
+    if (!(expr)) log_err_base(_ASSERT_ERR,"assert msg: \"" "%s" "\"\n", #expr); \
   } while (0)
 
 #endif /* DEBUG */
