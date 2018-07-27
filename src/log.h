@@ -17,13 +17,17 @@
 #define _GITHUB "https://github.com/lilin5819/log_h"
 
 #ifndef DEBUG
+#define DEBUG
+#endif
+
+#ifndef DEBUG
 
 #define LOG_DEF(...)
-#define log_tag(...)
+#define log_tag_base(...)
 #define log_base(...)
 #define logs(...)
 #define log_(...)
-#define log_err(...)
+#define log_err_base(...)
 #define log_e(...)
 #define log_d(...)
 #define log_u(...)
@@ -33,8 +37,6 @@
 #define log_s(...)
 #define log_p(...)
 #define log_mem(...)
-#define log_malloc(...)
-#define log_free(...)
 
 #define set_log_name(...)
 #define set_log_file(...)
@@ -123,66 +125,64 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 
 #define logs(...) log_line(_GRE, NULL, __VA_ARGS__)
 #define log_() log_line(_GRE, NULL, "line")
-#define log_tag(tag, ...) log_line(_GRE, tag, __VA_ARGS__)
-#define log_err(MSG, ...) log_line(_RED | _FLASH, MSG, __VA_ARGS__)
-#define log_e(...) log_err("ERROR", __VA_ARGS__)
-#define log_d(N) log_tag("int","%s=%d", #N, N)
-#define log_u(N) log_tag("uint","%s=%u", #N, N)
-#define log_ld(N) log_tag("long","%s=%ld", #N, N)
-#define log_lu(N) log_tag("ulong","%s=%lu", #N, N)
-#define log_f(N) log_tag("float","%s=%f", #N, N)
+#define log_tag_base(tag, ...) log_line(_GRE, tag, __VA_ARGS__)
+#define log_err_base(MSG, ...) log_line(_RED | _FLASH, MSG, __VA_ARGS__)
+#define log_e(...) log_err_base("ERROR", __VA_ARGS__)
+#define log_d(N) log_tag_base("int","%s=%d", #N, N)
+#define log_u(N) log_tag_base("uint","%s=%u", #N, N)
+#define log_ld(N) log_tag_base("long","%s=%ld", #N, N)
+#define log_lu(N) log_tag_base("ulong","%s=%lu", #N, N)
+#define log_f(N) log_tag_base("float","%s=%f", #N, N)
 
 #define log_p(N)                          \
   do {                                    \
     if (!N)                               \
-      log_err(_NULL_ERR, "%s", #N);       \
+      log_err_base(_NULL_ERR, "%s", #N);       \
     else                                  \
-      log_tag("pointer", "%s=%p", #N, N); \
+      log_tag_base("pointer", "%s=%p", #N, N); \
   } while (0)
 //     string
 #define log_s(STR)                               \
   do {                                           \
     if (!STR)                                    \
-      log_err(_NULL_ERR, "%s", #STR);            \
+      log_err_base(_NULL_ERR, "%s", #STR);            \
     else if (!((char *)(STR))[0])                \
-      log_err(_BLANK_ERR, "%s=\"\"", #STR);      \
+      log_err_base(_BLANK_ERR, "%s=\"\"", #STR);      \
     else                                         \
-      log_tag("string", "%s=\"%s\"", #STR, STR); \
+      log_tag_base("string", "%s=\"%s\"", #STR, STR); \
   } while (0)
 
 #define log_mem(P, LEN)                                     \
   do {                                                      \
-    char hexbuf[512]; \
+    char hexbuf[1024] = {0};                                \
     for (int i = 0; i < LEN; i++) {                         \
-      snprintf(hexbuf+strlen(hexbuf),512-strlen(hexbuf), "%02X", ((char *)P)[i] & 0xFF);      \
+      sprintf(hexbuf+2*i, "%02X", ((char *)P)[i] & 0xFF);   \
     }                                                       \
     if (!P)                                                 \
-      log_err(_NULL_ERR, "%s", #P);                         \
+      log_err_base(_NULL_ERR, "%s", #P);                         \
     else                                                    \
-      log_tag("MEMORY", "p:%s addr:%p len:%d HEX:%s", #P, P, LEN,hexbuf); \
+      log_tag_base("MEMORY", "p:%s addr:%p len:%d HEX:%s", #P, P, LEN,hexbuf); \
   } while (0)
 
 //     assert
 #define ok(expr)                                    \
   do {                                              \
-    if (!(expr)) log_err(_ASSERT_ERR,"assert msg: \"" "%s" "\"", #expr); \
+    if (!(expr)) log_err_base(_ASSERT_ERR,"assert msg: \"" "%s" "\"", #expr); \
   } while (0)
 
-#define log_malloc(_VAR, _SIZE)                         \
-  do {                                                  \
-    log_tag("malloc", "%s %p %lu", #_VAR, _VAR, _SIZE); \
-  } while (0)
-
-#define log_free(_VAR, _SIZE)                         \
-  do {                                                \
-    log_tag("free", "%s %p %lu", #_VAR, _VAR, _SIZE); \
-  } while (0)
 #endif /* DEBUG */
 
+
+#define log_printf logs
 #define log_size log_lu
 #define log_int log_d
+#define log_uint log_u
 #define log_long log_ld
+#define log_ulong log_lu
 #define log_str log_s
 #define log_string log_s
+#define log_error log_e
+#define log_float log_f
+#define log_hex log_mem
 
 #endif /* !LOG_H */
