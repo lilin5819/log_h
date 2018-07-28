@@ -10,7 +10,7 @@ int main(int argc, char const *argv[])
     log_d(argc);
     log_d(strlen(argv[0]));
 
-    set_log_name((char*)argv[0]);
+    set_log_app((char*)argv[0]);
 
     log_s(myname);
 
@@ -20,17 +20,18 @@ int main(int argc, char const *argv[])
     log_p(null_ptr);
     log_s(null_ptr);
     log_s(empty_str);
-    log_e("This is an ERROR msg !!!!");
+    log_e("This is an ERROR msg !!!!\n");
 
     ok(null_ptr != NULL);
     ok(myname != NULL);
 
     set_log_mode(0);
-    logs("%s can't catch this msg in %s , but in log file %s!!!","You","terminal","/tmp/test.log");
+    logs("%s can't catch this msg in %s , but in log file %s!!!\n","You","terminal","/tmp/test.log");
     set_log_mode(1);
 
     log_mem(myname,strlen(myname)+1);
 
-    logs("Thank %s","you");
+    logs("Thank %s\n","you");
+
     return 0;
 }

@@ -172,8 +172,9 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 
 #define log_mem(P, LEN)                                     \
   do {                                                      \
+    int i = 0;                                              \
     char hexbuf[1024] = {0};                                \
-    for (int i = 0; i < LEN; i++) {                         \
+    for (i = 0; i < LEN; i++) {                             \
       sprintf(hexbuf+2*i, "%02X", ((char *)P)[i] & 0xFF);   \
     }                                                       \
     if (!P)                                                 \
@@ -192,6 +193,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 
 
 #define log_printf logs
+#define log_error log_e
 #define log_size log_lu
 #define log_int log_d
 #define log_uint log_u
@@ -199,7 +201,6 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_ulong log_lu
 #define log_str log_s
 #define log_string log_s
-#define log_error log_e
 #define log_float log_f
 #define log_hex log_mem
 
