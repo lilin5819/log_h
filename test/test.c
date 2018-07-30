@@ -20,14 +20,24 @@ int main(int argc, char const *argv[])
     log_p(null_ptr);
     log_s(null_ptr);
     log_s(empty_str);
+    
+    set_log_mode(_MODE_VERBOSE);
+
     log_e("This is an ERROR msg !!!!\n");
+    ok( 2+1 == 2);
 
     ok(null_ptr != NULL);
     ok(myname != NULL);
 
     set_log_mode(0);
+
     logs("%s can't catch this msg in %s , but in log file %s!!!\n","You","terminal","/tmp/test.log");
-    set_log_mode(1);
+
+    set_log_mode(_MODE_VERBOSE);
+
+    logs("test no line code\n");
+    
+    set_log_mode(_MODE_VERBOSE|_MODE_TRACE_LINE);
 
     log_mem(myname,strlen(myname)+1);
 

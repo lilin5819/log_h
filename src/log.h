@@ -42,6 +42,7 @@
 #define set_log_app(...)
 #define set_log_file(...)
 #define set_log_mode(...)
+#define set_log_max_line(...)
 #define ok(...) __VA_ARGS__
 
 #else /* DEBUG */
@@ -58,12 +59,16 @@
 
 #define _COLOR_MASK 0x03
 #define _FLASH_MASK 0x04
+#define _TRACE_LINE 0x40
 #define _NEW_LINE 0x80
+
+#define _MODE_VERBOSE 0x01
+#define _MODE_NO_LINE 0x02
 typedef enum _COLOR_T { _GRE, _RED, _YEL, _END, _FLASH } COLOR_T;
 static char _COLOR[5][16] = {_GRE_STR, _RED_STR, _YEL_STR, _COLOR_END,
                              _FLASH_STR};
 extern char *_log_app_name;
-extern int _log_verbose_mode;
+extern unsigned char _log_mode;
 extern FILE *_log_fp;
 extern int _log_fd;
 extern size_t _log_line_sum;
@@ -71,22 +76,22 @@ extern size_t _log_max_line;
 extern void set_log_app(char *appname);
 extern void set_log_file(char *file);
 extern void set_log_max_line(size_t max_line);
-extern void set_log_mode(int is_verbose);
+extern void set_log_mode(unsigned char mode);
 
 #define LOG_DEF()                                                       \
   char *_log_app_name = "";                                             \
-  int _log_verbose_mode = 1;                                            \
+  unsigned char _log_mode = _MODE_VERBOSE;             \
   FILE *_log_fp = NULL;                                                 \
   int _log_fd = 0;                                                      \
   size_t _log_line_sum = 0;                                             \
-  size_t _log_max_line = 10000;                                         \
+  size_t _log_max_line = 1000;                                         \
   void set_log_app(char *appname) {                                    \
     if (!appname) return;                                               \
     _log_app_name = appname;                                            \
-    logs(_GITHUB "\n");                                                      \
-    logs("start log app <%s>\n", appname);                                \
+    logs(_GITHUB "\n");                                                 \
+    logs("start log app <%s>\n", appname);                              \
   }                                                                     \
-  void set_log_mode(int is_verbose) { _log_verbose_mode = is_verbose; } \
+  void set_log_mode(unsigned char mode) { _log_mode = mode; }           \
   void set_log_max_line(size_t max_line) { _log_max_line = max_line; }  \
   void set_log_file(char *file) {                                       \
     if (_log_fp) {                                                      \
@@ -102,14 +107,15 @@ static inline void log_base(const char flag, const char *tag, const char *file,
                             ...) {
   static char fmtbuf[1024];
   static char buf[2048];
-  if (!_log_verbose_mode && !_log_fp) return;
+  if (!(_log_mode &_MODE_VERBOSE) && !_log_fp) return;
   va_list ap;
   va_start(ap, fmt);
   vsnprintf(fmtbuf, sizeof(fmtbuf), fmt, ap);
   va_end(ap);
   snprintf(buf, 2048, "[%s%s%s]", _COLOR[_YEL], _log_app_name, _COLOR[_END]);
-  snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%-10s > %-15s > %3d]", file,
-           fun, line);
+  if(!(_log_mode & _MODE_NO_LINE))
+    snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%-10s > %-15s > %3d]", file,
+            fun, line);
   if (tag)
     snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%s%s%s%s]",
              _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], tag,
@@ -120,7 +126,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
   if(flag&_NEW_LINE)
     snprintf(buf + strlen(buf), 2048 - strlen(buf), "\n");
 
-  if (_log_verbose_mode) {
+  if (_log_mode & _MODE_VERBOSE) {
     fputs(buf, stdout);
     fflush(stdout);
   }
@@ -203,5 +209,19 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_string log_s
 #define log_float log_f
 #define log_hex log_mem
+
+
+//                 elink 原始函数重定向
+#define log_msg(level, ...) logs(__VA_ARGS__)
+#define log_debug logs
+#define log_trace(...)
+#define LOG_LEVEL_ERROR   (0)
+#define LOG_LEVEL_ALERT   (1)
+#define LOG_LEVEL_DEBUG   (2)
+#define LOG_LEVEL_TRACE   (3)
+#define LOG_TRACE_STRING "%s:[%d]\n", __FUNCTION__, __LINE__
+#define TRACE log_()
+#define print_package log_mem
+//                 elink 原始函数重定向
 
 #endif /* !LOG_H */
