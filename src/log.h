@@ -105,29 +105,30 @@ extern void set_log_mode(unsigned char mode);
 static inline void log_base(const char flag, const char *tag, const char *file,
                             const char *fun, const int line, const char *fmt,
                             ...) {
-  static char fmtbuf[1024];
-  static char buf[2048];
+  static char buf[512];
   if (!(_log_mode &_MODE_VERBOSE) && !_log_fp) return;
-  va_list ap;
-  va_start(ap, fmt);
-  vsnprintf(fmtbuf, sizeof(fmtbuf), fmt, ap);
-  va_end(ap);
-  snprintf(buf, 2048, "[%s%s%s]", _COLOR[_YEL], _log_app_name, _COLOR[_END]);
+
+  snprintf(buf, 512, "[%s%s%s]", _COLOR[_YEL], _log_app_name, _COLOR[_END]);
   if(!(_log_mode & _MODE_NO_LINE))
-    snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%-10s > %-15s > %3d]", file,
+    snprintf(buf + strlen(buf), 512 - strlen(buf), "[%-10s > %-15s > %3d]", file,
             fun, line);
   if (tag)
-    snprintf(buf + strlen(buf), 2048 - strlen(buf), "[%s%s%s%s]",
+    snprintf(buf + strlen(buf), 512 - strlen(buf), "[%s%s%s%s]",
              _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], tag,
              _COLOR[_END]);
-  snprintf(buf + strlen(buf), 2048 - strlen(buf), "%s%s%s%s",
-           _COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK], fmtbuf,
-           _COLOR[_END]);
-  if(flag&_NEW_LINE)
-    snprintf(buf + strlen(buf), 2048 - strlen(buf), "\n");
+
 
   if (_log_mode & _MODE_VERBOSE) {
     fputs(buf, stdout);
+    fprintf(stdout,"%s%s",_COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK]);
+    va_list ap;
+    va_start(ap, fmt);
+      vfprintf(stdout, fmt, ap);
+    va_end(ap);
+    fprintf(stdout,"%s",_COLOR[_END]);
+    if(flag&_NEW_LINE)
+      fputs("\n",stdout);
+
     fflush(stdout);
   }
   if (_log_fp) {
@@ -137,8 +138,16 @@ static inline void log_base(const char flag, const char *tag, const char *file,
       lseek(_log_fd,0,SEEK_SET);
     } else
       _log_line_sum ++;
-    fputs(buf, _log_fp);
-    fflush(_log_fp);
+      fputs(buf, _log_fp);
+      fprintf(_log_fp,"%s%s",_COLOR[flag & _FLASH], _COLOR[flag & _COLOR_MASK]);
+      va_list ap;
+      va_start(ap, fmt);
+        vfprintf(_log_fp, fmt, ap);
+      va_end(ap);
+      fprintf(_log_fp,"%s",_COLOR[_END]);
+      if(flag&_NEW_LINE)
+        fputs("\n",_log_fp);
+      fflush(_log_fp);
   }
 }
 
@@ -179,7 +188,7 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_mem(P, LEN)                                     \
   do {                                                      \
     int i = 0;                                              \
-    char hexbuf[1024] = {0};                                \
+    char hexbuf[2*(LEN)+1];                                \
     for (i = 0; i < LEN; i++) {                             \
       sprintf(hexbuf+2*i, "%02X", ((char *)P)[i] & 0xFF);   \
     }                                                       \
@@ -209,19 +218,5 @@ static inline void log_base(const char flag, const char *tag, const char *file,
 #define log_string log_s
 #define log_float log_f
 #define log_hex log_mem
-
-
-//                 elink 原始函数重定向
-#define log_msg(level, ...) logs(__VA_ARGS__)
-#define log_debug logs
-#define log_trace(...)
-#define LOG_LEVEL_ERROR   (0)
-#define LOG_LEVEL_ALERT   (1)
-#define LOG_LEVEL_DEBUG   (2)
-#define LOG_LEVEL_TRACE   (3)
-#define LOG_TRACE_STRING "%s:[%d]\n", __FUNCTION__, __LINE__
-#define TRACE log_()
-#define print_package log_mem
-//                 elink 原始函数重定向
 
 #endif /* !LOG_H */

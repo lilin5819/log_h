@@ -33,11 +33,11 @@ int main(int argc, char const *argv[])
 
     logs("%s can't catch this msg in %s , but in log file %s!!!\n","You","terminal","/tmp/test.log");
 
-    set_log_mode(_MODE_VERBOSE);
+    set_log_mode(_MODE_VERBOSE|_MODE_NO_LINE);
 
     logs("test no line code\n");
     
-    set_log_mode(_MODE_VERBOSE|_MODE_TRACE_LINE);
+    set_log_mode(_MODE_VERBOSE);
 
     log_mem(myname,strlen(myname)+1);
 
