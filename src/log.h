@@ -191,15 +191,16 @@ static inline void log_base(const int level,const char flag, const char *tag, co
 #define log_mem(P, LEN)                                                \
   do {                                                                 \
     int i = 0;                                                         \
-    char hexbuf[2 * (LEN) + 1];                                        \
-    hexbuf[2 * (LEN)] = '\0';                                          \
-    for (i = 0; i < LEN; i++) {                                        \
+    int len = (LEN) > 4096 ? (LEN) : 4096; \
+    char hexbuf[2 * len + 1];                                        \
+    hexbuf[2 * len] = '\0';                                          \
+    for (i = 0; i < len; i++) {                                        \
       sprintf(hexbuf + 2 * i, "%02X", ((char *)P)[i] & 0xFF);          \
     }                                                                  \
     if (!P)                                                            \
       log_err_base(0,_NULL_ERR, "%s\n", #P);                             \
     else                                                               \
-      log_tag_base(_LV_NOMRL,"MEMORY", "p:%s addr:%p len:%d HEX:%s", #P, P, LEN, \
+      log_tag_base(_LV_NOMRL,"MEMORY", "p:%s addr:%p len:%d HEX:%s", #P, P, len, \
                    hexbuf);                                            \
   } while (0)
 
